@@ -356,6 +356,10 @@ function getRelPos(evt){
   return {x,y};
 }
 
+// キャンバスの touch-action:none（CSS側）だけでスクロール／ズームを抑止する。
+// 独自の touchstart/touchmove/touchend での preventDefault は Pointer Events と
+// 二重に噛み合って drawing フラグが true のまま戻らなくなり、ページ全体が
+// スクロール不能になるバグの原因だったため廃止した。
 let drawing = false;
 canvas.addEventListener('pointerdown', (e)=>{
   drawing = true;
@@ -368,7 +372,6 @@ canvas.addEventListener('pointerdown', (e)=>{
     width: parseInt(document.getElementById('widthRange').value,10)
   };
   strokes.push(currentStroke);
-  document.body.style.overflow = 'hidden';
   e.preventDefault();
 });
 canvas.addEventListener('pointermove', (e)=>{
@@ -379,20 +382,10 @@ canvas.addEventListener('pointermove', (e)=>{
   redrawAll();
   e.preventDefault();
 });
-function endStroke(e){ drawing = false; currentStroke = null; document.body.style.overflow=''; if(e) e.preventDefault(); }
+function endStroke(e){ drawing = false; currentStroke = null; if(e) e.preventDefault(); }
 canvas.addEventListener('pointerup', endStroke);
 canvas.addEventListener('pointercancel', endStroke);
-
-// iOS Safari 等の一部ブラウザ対策：キャンバス上のタッチスクロール／ズームを確実に止める
-['touchstart','touchmove','touchend'].forEach(evt=>{
-  canvas.addEventListener(evt, (e)=>{ e.preventDefault(); }, { passive:false });
-});
-holder.addEventListener('touchmove', (e)=>{ e.preventDefault(); }, { passive:false });
-
-// 描画中は上方向のプルトゥリフレッシュ／バウンススクロールも document 全体で止める
-document.addEventListener('touchmove', (e)=>{
-  if(drawing){ e.preventDefault(); }
-}, { passive:false });
+canvas.addEventListener('pointerleave', endStroke);
 
 document.querySelectorAll('.pen-opt').forEach(el=>{
   el.addEventListener('click', ()=>{
