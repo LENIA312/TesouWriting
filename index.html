@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>おえかき手相診断</title>
+<style>
+  :root{
+    --neon-pink:#ff2fb0;
+    --neon-cyan:#00e5ff;
+    --neon-gold:#ffd700;
+    --bg-deep:#180032;
+    --bg-deep2:#3a0066;
+    --panel:#fff7e8;
+    --ink:#2a0a3d;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;
+    min-height:100%;
+    overscroll-behavior:none;
+    touch-action:pan-y;
+    background:
+      radial-gradient(circle at 20% 10%, #ff2fb055, transparent 40%),
+      radial-gradient(circle at 80% 90%, #00e5ff44, transparent 45%),
+      linear-gradient(160deg, var(--bg-deep), var(--bg-deep2) 60%, #0d0021);
+    color:var(--panel);
+    font-family:'Yusei Magic','Rounded Mplus 1c','Hiragino Maru Gothic ProN','Hiragino Sans','Meiryo',sans-serif;
+    overflow-x:hidden;
+    -webkit-tap-highlight-color:transparent;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Yusei+Magic&family=DotGothic16&display=swap');
+
+  .starfield{
+    position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden;
+  }
+  .star{
+    position:absolute; width:3px; height:3px; background:#fff; border-radius:50%;
+    opacity:.7; animation:twinkle 2.4s infinite ease-in-out;
+  }
+  @keyframes twinkle{0%,100%{opacity:.15;transform:scale(1);}50%{opacity:1;transform:scale(1.6);}}
+
+  .wrap{position:relative; z-index:1; max-width:480px; margin:0 auto; padding:14px 14px 60px;}
+
+  .marquee{
+    overflow:hidden; white-space:nowrap; background:#000;
+    border:3px solid var(--neon-gold); border-radius:8px; margin-bottom:12px;
+    box-shadow:0 0 14px var(--neon-gold), inset 0 0 8px #000;
+  }
+  .marquee span{
+    display:inline-block; padding-left:100%;
+    animation:scroll-left 9s linear infinite;
+    font-size:13px; letter-spacing:2px; color:var(--neon-gold);
+    font-family:'DotGothic16',monospace;
+  }
+  @keyframes scroll-left{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
+
+  h1{
+    text-align:center; font-size:26px; line-height:1.3; margin:6px 0 4px;
+    color:#fff;
+    text-shadow:
+      0 0 6px var(--neon-pink),
+      0 0 14px var(--neon-pink),
+      0 0 26px var(--neon-cyan),
+      2px 2px 0 #000;
+    animation:pulse-glow 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse-glow{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.035);}
+  }
+  .sub{
+    text-align:center; font-size:12px; color:var(--neon-cyan);
+    margin-bottom:14px; text-shadow:0 0 6px var(--neon-cyan);
+  }
+  .badge-new{
+    display:inline-block; background:red; color:#fff; font-size:10px;
+    padding:2px 6px; border-radius:4px; margin-left:6px; vertical-align:middle;
+    animation:blink 1s steps(2,start) infinite; font-weight:bold;
+  }
+  @keyframes blink{50%{opacity:0;}}
+
+  .panel{
+    background:var(--panel); color:var(--ink); border-radius:16px;
+    border:4px solid var(--neon-gold);
+    box-shadow:0 0 0 3px #000, 0 8px 0 #000, 0 10px 24px #00000088;
+    padding:12px; margin-bottom:14px;
+  }
+  .panel h2{
+    margin:0 0 8px; font-size:15px; text-align:center; color:#7a1b6d;
+    border-bottom:2px dashed #d9b98f; padding-bottom:6px;
+  }
+
+  .canvas-holder{
+    position:relative; width:100%; aspect-ratio:400/520;
+    background:linear-gradient(180deg,#fff2e0,#ffe6cf);
+    border-radius:10px; overflow:hidden; touch-action:none;
+    border:2px solid #d9b98f;
+  }
+  .canvas-holder svg{position:absolute; inset:0; width:100%; height:100%; display:block;}
+  .canvas-holder canvas{position:absolute; inset:0; width:100%; height:100%; display:block; cursor:crosshair; touch-action:none;}
+
+  .hint{
+    font-size:11px; text-align:center; color:#8a6a4f; margin-top:6px;
+  }
+
+  .btn-row{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  button{
+    font-family:inherit; font-weight:bold; font-size:13px; cursor:pointer;
+    border:3px solid #000; border-radius:10px; padding:10px 8px;
+    box-shadow:0 4px 0 #000; transition:transform .06s, box-shadow .06s;
+    flex:1; min-width:90px;
+  }
+  button:active{transform:translateY(4px); box-shadow:0 0 0 #000;}
+  .btn-main{background:linear-gradient(90deg,var(--neon-pink),#ff7ad9); color:#fff;}
+  .btn-sub{background:linear-gradient(90deg,var(--neon-cyan),#8af7ff); color:#00323a;}
+  .btn-clear{background:#eee; color:#333;}
+  .btn-share{background:linear-gradient(90deg,var(--neon-gold),#fff2a8); color:#5a4200;}
+
+  .pen-row{display:flex; align-items:center; gap:8px; margin-top:10px; font-size:12px; flex-wrap:wrap;}
+  .pen-opt{
+    width:30px;height:30px;border-radius:50%;border:3px solid #000; cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .pen-opt.active{outline:3px solid var(--neon-gold); outline-offset:2px;}
+
+  .result{
+    display:none; text-align:center; position:relative;
+  }
+  .result.show{display:block; animation:shake-in .5s ease;}
+  @keyframes shake-in{
+    0%{transform:scale(.3) rotate(-8deg); opacity:0;}
+    60%{transform:scale(1.1) rotate(4deg); opacity:1;}
+    80%{transform:scale(.95) rotate(-2deg);}
+    100%{transform:scale(1) rotate(0);}
+  }
+  .rank{
+    font-size:34px; font-weight:bold; margin:4px 0;
+    background:linear-gradient(90deg,#ff2fb0,#ffd700,#00e5ff,#ff2fb0);
+    background-size:300% 100%;
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:rainbow-move 2.5s linear infinite;
+  }
+  @keyframes rainbow-move{0%{background-position:0% 0;}100%{background-position:300% 0;}}
+  .score{font-size:15px; margin-bottom:8px;}
+  .score b{font-size:22px; color:#7a1b6d;}
+  .fortune-line{
+    text-align:left; background:#fff; border:2px dashed #d9b98f; border-radius:10px;
+    padding:10px 12px; margin:8px 0; font-size:13.5px; line-height:1.6;
+  }
+  .fortune-line b{color:#c2185b;}
+  .warn{
+    margin-top:10px; font-size:11px; color:#a3762b; background:#fff6df;
+    border:1px dashed #d9b98f; border-radius:8px; padding:8px;
+  }
+  .disclaimer{
+    margin-top:16px; text-align:center; font-size:10px; color:#c8b8ff; opacity:.8;
+  }
+  .emoji-fall{
+    position:fixed; top:-40px; font-size:22px; z-index:50; pointer-events:none;
+    animation:fall linear forwards;
+  }
+  @keyframes fall{
+    to{ transform:translateY(110vh) rotate(360deg); opacity:.2;}
+  }
+
+  .loading-overlay{
+    position:fixed; inset:0; z-index:300; display:none;
+    flex-direction:column; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 50% 35%, #4a0080ee, #10001fee 75%);
+    backdrop-filter:blur(3px);
+  }
+  .loading-overlay.show{display:flex;}
+  .loading-crystal{
+    font-size:88px;
+    animation:crystal-spin 1.4s linear infinite, crystal-glow 1s ease-in-out infinite;
+  }
+  @keyframes crystal-spin{
+    0%{transform:rotate(0deg) scale(1);}
+    50%{transform:rotate(180deg) scale(1.15);}
+    100%{transform:rotate(360deg) scale(1);}
+  }
+  @keyframes crystal-glow{
+    0%,100%{filter:drop-shadow(0 0 10px var(--neon-pink)) drop-shadow(0 0 18px var(--neon-cyan));}
+    50%{filter:drop-shadow(0 0 26px var(--neon-gold)) drop-shadow(0 0 40px var(--neon-pink));}
+  }
+  .loading-text{
+    margin-top:22px; font-size:19px; font-weight:bold; color:#fff; text-align:center; padding:0 20px;
+    text-shadow:0 0 8px var(--neon-pink), 0 0 18px var(--neon-cyan);
+    animation:loading-flicker 1.1s ease-in-out infinite;
+  }
+  @keyframes loading-flicker{0%,100%{opacity:1;}50%{opacity:.55;}}
+  .loading-sub{margin-top:8px; font-size:12px; color:var(--neon-cyan); text-shadow:0 0 6px var(--neon-cyan);}
+  .loading-bar{
+    width:220px; height:8px; margin-top:20px; border-radius:5px;
+    background:#000a; border:2px solid var(--neon-gold); overflow:hidden;
+  }
+  .loading-bar-fill{
+    height:100%; width:35%;
+    background:linear-gradient(90deg,var(--neon-pink),var(--neon-gold),var(--neon-cyan));
+    animation:loading-bar-move 1.1s ease-in-out infinite;
+  }
+  @keyframes loading-bar-move{
+    0%{transform:translateX(-120%);}
+    100%{transform:translateX(380%);}
+  }
+
+  footer{
+    text-align:center; font-size:10px; color:#8b7bb8; margin-top:18px;
+  }
+</style>
+</head>
+<body>
+
+<div class="starfield" id="starfield"></div>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-crystal">🔮</div>
+  <div class="loading-text">手相マン が あなたの運命を 解析中…</div>
+  <div class="loading-sub">しばらくお待ちください</div>
+  <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+</div>
+
+<div class="wrap">
+  <div class="marquee"><span>★☆★ super deluxe ULTRA 手相メーカー ★☆★　あなたの運命がマジで丸わかり！？　毎回結果が変わる激ヤバシステム搭載　★☆★</span></div>
+
+  <h1>おえかき手相診断<span class="badge-new">NEW!!</span></h1>
+  <div class="sub">～自分で手相を描いて、自分で運命を決めろ～</div>
+
+  <div class="panel">
+    <h2>⚙　Gemini APIキー設定</h2>
+    <div class="hint">
+      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> または Google Cloud Console で発行したキーを貼り付けてください。<br>
+      このブラウザ内（localStorage）にのみ保存され、コード／リポジトリには一切含まれません。
+    </div>
+    <div class="btn-row">
+      <input type="password" id="apiKeyInput" placeholder="Gemini APIキーを貼り付け"
+             style="flex:2; min-width:160px; padding:10px; border:3px solid #000; border-radius:10px; font-family:inherit; font-size:13px;">
+      <button class="btn-sub" id="saveKeyBtn">保存</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>①　運命の手のひらに好きな線を描け</h2>
+    <div class="canvas-holder" id="holder">
+      <svg viewBox="0 0 36 36" id="palmSvg">
+        <path fill="#EF9645" d="M20.5 2.965c-1.381 0-2.5 1.119-2.5 2.5v.005L15.5.465c-1.381 0-2.5 1.119-2.5 2.5V4.25l-2.5-1.535c-1.381 0-2.5 1.119-2.5 2.5V8.75L7 18h13.542L20.5 2.965z"/>
+        <path fill="#FFDC5D" d="M31.375 16.219c-1.381-.611-3.354.208-4.75 2.188-.917 1.3-1.187 3.151-2.391 3.344-.46.073-1.234-.313-1.234-1.397V4.5s0-2-2-2-2 2-2 2v11.633c0-.029-1-.064-1-.082V2s0-2-2-2-2 2-2 2v14.053c0 .017-1 .041-1 .069V4.25s0-2-2-2-2 2-2 2v12.638c0 .118-1 .251-1 .398V8.75s0-2-2-2-2 2-2 2V24c0 6.627 5.373 12 12 12 4.775 0 8.06-2.598 9.896-5.292 1.557-2.285 2.009-4.658 2.104-5.375 0 0 .123-1.479 1.156-2.865 1.469-1.969 2.5-3.156 3.125-3.866.317-.358.625-1.706-.906-2.383z"/>
+        <path fill="#EF9645" d="M23.439 21.471c-.297-.266-.372-.552-.417-.808-1.892.259-4.457.789-6.427 2.715-2.556 2.499-2.992 5.2-2.971 7.007.017 1.457.812 2.147 1.045-.012.292-2.706 2.254-8.063 8.784-8.58.028-.002.387-.024.591-.035 0 0-.352-.06-.605-.287z"/>
+      </svg>
+      <canvas id="canvas"></canvas>
+    </div>
+    <div class="hint">指またはマウスでグリグリ描いてね（消したいときは「描き直す」）</div>
+
+    <div class="pen-row">
+      <span>ペン：</span>
+      <div class="pen-opt active" data-mode="rainbow" style="background:conic-gradient(red,orange,yellow,green,blue,violet,red);">🌈</div>
+      <div class="pen-opt" data-mode="black" style="background:#111;"></div>
+      <div class="pen-opt" data-mode="white" style="background:#fff;"></div>
+      <div class="pen-opt" data-mode="red" style="background:#ff2d2d;"></div>
+      <div class="pen-opt" data-mode="blue" style="background:#2d6bff;"></div>
+      <div class="pen-opt" data-mode="green" style="background:#2db84a;"></div>
+      <span style="margin-left:auto;">太さ：</span>
+      <input type="range" id="widthRange" min="2" max="14" value="5" style="width:80px;">
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-clear" id="undoBtn">1本戻す</button>
+      <button class="btn-clear" id="clearBtn">描き直す</button>
+      <button class="btn-main" id="judgeBtn">②　占ってもらう！！</button>
+    </div>
+  </div>
+
+  <div class="panel result" id="resultPanel">
+    <h2>③　結果発表　ジャジャーン</h2>
+    <div class="rank" id="rankText">???</div>
+    <div class="score">手相偏差値：<b id="scoreText">--</b></div>
+    <div class="fortune-line"><b>【総合運】</b><br><span id="line1"></span></div>
+    <div class="fortune-line"><b>【恋愛運】</b><br><span id="line2"></span></div>
+    <div class="fortune-line"><b>【金運】</b><br><span id="line3"></span></div>
+    <div class="fortune-line"><b>【仕事運】</b><br><span id="line4"></span></div>
+    <div class="warn" id="warnLine"></div>
+    <div class="btn-row">
+      <button class="btn-sub" id="retryBtn">もう一度占う</button>
+      <button class="btn-share" id="shareBtn">📤　結果をシェア</button>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    ※これはクソゲーです。手相占いの結果に科学的根拠は一切ありません（当然です）。<br>
+    描いた線の本数・長さ・形からランダムっぽく生成しているだけの、ただのお楽しみコンテンツです。
+  </div>
+  <footer>手相を描くクソゲー β版 ／ 何回でも遊べます<br>手アイコン: Twemoji（CC BY 4.0）<br>©MigiteniEdamame ©Pisorium</footer>
+</div>
+
+<script>
+// ---------- 背景の星 ----------
+(function(){
+  const sf = document.getElementById('starfield');
+  for(let i=0;i<40;i++){
+    const s = document.createElement('div');
+    s.className='star';
+    s.style.left = Math.random()*100+'vw';
+    s.style.top = Math.random()*100+'vh';
+    s.style.animationDelay = (Math.random()*2)+'s';
+    sf.appendChild(s);
+  }
+})();
+
+// ---------- キャンバス設定 ----------
+const holder = document.getElementById('holder');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let dpr = Math.max(1, window.devicePixelRatio || 1);
+let strokes = []; // 完成した線 [{points:[{x,y}], color, width}]
+let currentStroke = null;
+let penMode = 'rainbow';
+const PEN_COLORS = {
+  rainbow: 'rainbow',
+  black: '#111111',
+  white: '#ffffff',
+  red: '#ff2d2d',
+  blue: '#2d6bff',
+  green: '#2db84a'
+};
+let hue = 0;
+
+function resizeCanvas(){
+  const rect = holder.getBoundingClientRect();
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  redrawAll();
+}
+window.addEventListener('resize', resizeCanvas);
+
+function redrawAll(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.scale(dpr,dpr);
+  const scaleX = canvas.width/dpr;
+  const scaleY = canvas.height/dpr;
+  strokes.forEach(s=>drawStroke(s, scaleX, scaleY));
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr,dpr);
+}
+
+function drawStroke(s, w, h){
+  if(s.points.length < 2){ return; }
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.lineWidth = s.width;
+  for(let i=1;i<s.points.length;i++){
+    const p0 = s.points[i-1], p1 = s.points[i];
+    if(s.color === 'rainbow'){
+      ctx.strokeStyle = `hsl(${p1.hue},100%,50%)`;
+    } else {
+      ctx.strokeStyle = s.color;
+    }
+    ctx.beginPath();
+    ctx.moveTo(p0.x*w, p0.y*h);
+    ctx.lineTo(p1.x*w, p1.y*h);
+    ctx.stroke();
+  }
+}
+
+function getRelPos(evt){
+  const rect = canvas.getBoundingClientRect();
+  const x = (evt.clientX - rect.left)/rect.width;
+  const y = (evt.clientY - rect.top)/rect.height;
+  return {x,y};
+}
+
+let drawing = false;
+canvas.addEventListener('pointerdown', (e)=>{
+  drawing = true;
+  canvas.setPointerCapture(e.pointerId);
+  const pos = getRelPos(e);
+  hue = Math.random()*360;
+  currentStroke = {
+    points: [{...pos, hue}],
+    color: PEN_COLORS[penMode] || '#111111',
+    width: parseInt(document.getElementById('widthRange').value,10)
+  };
+  strokes.push(currentStroke);
+  document.body.style.overflow = 'hidden';
+  e.preventDefault();
+});
+canvas.addEventListener('pointermove', (e)=>{
+  if(!drawing || !currentStroke) return;
+  const pos = getRelPos(e);
+  hue = (hue + 6) % 360;
+  currentStroke.points.push({...pos, hue});
+  redrawAll();
+  e.preventDefault();
+});
+function endStroke(e){ drawing = false; currentStroke = null; document.body.style.overflow=''; if(e) e.preventDefault(); }
+canvas.addEventListener('pointerup', endStroke);
+canvas.addEventListener('pointercancel', endStroke);
+
+// iOS Safari 等の一部ブラウザ対策：キャンバス上のタッチスクロール／ズームを確実に止める
+['touchstart','touchmove','touchend'].forEach(evt=>{
+  canvas.addEventListener(evt, (e)=>{ e.preventDefault(); }, { passive:false });
+});
+holder.addEventListener('touchmove', (e)=>{ e.preventDefault(); }, { passive:false });
+
+// 描画中は上方向のプルトゥリフレッシュ／バウンススクロールも document 全体で止める
+document.addEventListener('touchmove', (e)=>{
+  if(drawing){ e.preventDefault(); }
+}, { passive:false });
+
+document.querySelectorAll('.pen-opt').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    document.querySelectorAll('.pen-opt').forEach(o=>o.classList.remove('active'));
+    el.classList.add('active');
+    penMode = el.dataset.mode;
+  });
+});
+
+document.getElementById('undoBtn').addEventListener('click', ()=>{
+  strokes.pop();
+  redrawAll();
+});
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  strokes = [];
+  redrawAll();
+  document.getElementById('resultPanel').classList.remove('show');
+});
+
+// ---------- AI診断ロジック (Gemini) ----------
+const GEMINI_MODEL = "gemini-3.6-flash";
+const API_KEY_STORAGE = 'tesou_gemini_api_key';
+
+function getApiKey(){
+  return localStorage.getItem(API_KEY_STORAGE) || '';
+}
+
+const apiKeyInput = document.getElementById('apiKeyInput');
+apiKeyInput.value = getApiKey();
+document.getElementById('saveKeyBtn').addEventListener('click', () => {
+  localStorage.setItem(API_KEY_STORAGE, apiKeyInput.value.trim());
+  alert('APIキーを保存しました（このブラウザにのみ保存されます）');
+});
+
+function hasDrawing(){
+  return strokes.some(s => s.points.length > 1);
+}
+
+// 手のひらイラスト＋描いた線を1枚のPNG画像（base64）に合成する
+async function buildPalmImageBase64(){
+  const rect = holder.getBoundingClientRect();
+  const w = Math.round(rect.width), h = Math.round(rect.height);
+  const off = document.createElement('canvas');
+  off.width = w; off.height = h;
+  const octx = off.getContext('2d');
+  octx.fillStyle = '#fff2e0';
+  octx.fillRect(0, 0, w, h);
+
+  const svgMarkup = new XMLSerializer().serializeToString(document.getElementById('palmSvg'));
+  const svgUrl = URL.createObjectURL(new Blob([svgMarkup], {type:'image/svg+xml;charset=utf-8'}));
+  try{
+    const svgImg = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = svgUrl;
+    });
+    octx.drawImage(svgImg, 0, 0, w, h);
+  } finally {
+    URL.revokeObjectURL(svgUrl);
+  }
+
+  octx.drawImage(canvas, 0, 0, w, h);
+  return off.toDataURL('image/png').split(',')[1];
+}
+
+async function askGeminiFortune(imageBase64){
+  const prompt = 'あなたはノリの良いインチキ手相占い師です。添付画像は「手のひらのイラストに、ユーザーが指で描いた線」です。線の本数・長さ・形・広がり方を見て、思いっきり面白おかしく手相占いの結果をでっち上げてください。科学的根拠は一切不要、ノリと勢い重視でOKです。日本語で、必ず次のJSON形式のみを出力してください（説明文やマークダウンのコードブロックは不要、JSON以外は一切出力しないこと）。\n' +
+    '{"title":"称号（10文字前後、中二病っぽく煽り気味に）","score":"手相偏差値スコア。0〜999.9の数値のみ、小数第1位まで","line1":"総合運のコメント（1〜2文）","line2":"恋愛運のコメント（1〜2文）","line3":"金運のコメント（1〜2文）","line4":"仕事運のコメント（1〜2文）","warn":"ふざけた警告文を1文"}';
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${getApiKey()}`,
+    {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            {text: prompt},
+            {inlineData: {mimeType: 'image/png', data: imageBase64}}
+          ]
+        }],
+        generationConfig: {temperature: 1.1, responseMimeType: 'application/json'}
+      })
+    }
+  );
+  if(!res.ok){
+    throw new Error(`Gemini API error (${res.status})`);
+  }
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if(!text){ throw new Error('Geminiから結果テキストを取得できませんでした'); }
+  return JSON.parse(text);
+}
+
+// ---------- 占い中の全画面演出 ----------
+const loadingOverlay = document.getElementById('loadingOverlay');
+let loadingConfettiTimer = null;
+function showLoading(){
+  loadingOverlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  loadingConfettiTimer = setInterval(() => spawnConfetti(6), 400);
+}
+function hideLoading(){
+  loadingOverlay.classList.remove('show');
+  document.body.style.overflow = '';
+  clearInterval(loadingConfettiTimer);
+}
+
+// ---------- シェア画像の生成 ----------
+function loadImageFromDataUrl(dataUrl){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
+function wrapCJKText(c, text, maxWidth){
+  const lines = [];
+  let line = '';
+  for(const ch of String(text)){
+    const test = line + ch;
+    if(line && c.measureText(test).width > maxWidth){
+      lines.push(line);
+      line = ch;
+    } else {
+      line = test;
+    }
+  }
+  if(line) lines.push(line);
+  return lines;
+}
+
+function roundRectPath(c, x, y, w, h, r){
+  c.beginPath();
+  c.roundRect(x, y, w, h, r);
+}
+
+async function buildShareImageBlob(result){
+  const CARD_W = 960;
+  const MARGIN = 40;
+  const MAX_H = 2400;
+
+  const off = document.createElement('canvas');
+  off.width = CARD_W; off.height = MAX_H;
+  const c = off.getContext('2d');
+
+  const bg = c.createLinearGradient(0, 0, 0, MAX_H);
+  bg.addColorStop(0, '#2a0450');
+  bg.addColorStop(1, '#150026');
+  c.fillStyle = bg;
+  c.fillRect(0, 0, CARD_W, MAX_H);
+
+  // サイトタイトル（全幅・中央）
+  c.textAlign = 'center';
+  c.fillStyle = '#ffd700';
+  c.font = 'bold 20px "Yusei Magic","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif';
+  c.fillText('手相を描くクソゲー', CARD_W / 2, 44);
+
+  // 左カラム：手のひら画像
+  const colTop = 96;
+  const LEFT_W = 340;
+  const handH = Math.round(LEFT_W * 520 / 400);
+  const GAP = 44;
+  const rightX = MARGIN + LEFT_W + GAP;
+  const rightW = CARD_W - MARGIN - rightX;
+
+  c.fillStyle = '#fff2e0';
+  roundRectPath(c, MARGIN - 12, colTop - 12, LEFT_W + 24, handH + 24, 16);
+  c.fill();
+  const palmDataUrl = 'data:image/png;base64,' + await buildPalmImageBase64();
+  const palmImg = await loadImageFromDataUrl(palmDataUrl);
+  c.drawImage(palmImg, MARGIN, colTop, LEFT_W, handH);
+  const leftBottom = colTop + handH + 12;
+
+  // 右カラム：診断結果
+  c.textAlign = 'left';
+  let ry = colTop + 30;
+
+  c.font = 'bold 30px "Yusei Magic","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif';
+  const titleGrad = c.createLinearGradient(rightX, 0, rightX + rightW, 0);
+  titleGrad.addColorStop(0, '#ff2fb0'); titleGrad.addColorStop(.5, '#ffd700'); titleGrad.addColorStop(1, '#00e5ff');
+  c.fillStyle = titleGrad;
+  wrapCJKText(c, result.title, rightW).forEach(line => {
+    c.fillText(line, rightX, ry);
+    ry += 40;
+  });
+  ry += 18;
+
+  c.font = 'bold 22px "Hiragino Sans","Meiryo",sans-serif';
+  c.fillStyle = '#fff';
+  c.fillText('手相偏差値：' + result.score, rightX, ry);
+  ry += 46;
+
+  const cards = [
+    {label: '【総合運】', text: result.line1},
+    {label: '【恋愛運】', text: result.line2},
+    {label: '【金運】', text: result.line3},
+    {label: '【仕事運】', text: result.line4}
+  ];
+  for(const card of cards){
+    c.font = '15px "Hiragino Sans","Meiryo",sans-serif';
+    const lines = wrapCJKText(c, card.text, rightW - 32);
+    const boxH = 36 + lines.length * 23 + 14;
+
+    c.fillStyle = '#fff';
+    roundRectPath(c, rightX, ry, rightW, boxH, 12);
+    c.fill();
+    c.strokeStyle = '#d9b98f'; c.lineWidth = 2; c.setLineDash([6, 4]);
+    roundRectPath(c, rightX, ry, rightW, boxH, 12);
+    c.stroke();
+    c.setLineDash([]);
+
+    c.fillStyle = '#c2185b';
+    c.font = 'bold 15px "Hiragino Sans","Meiryo",sans-serif';
+    c.fillText(card.label, rightX + 16, ry + 27);
+
+    c.fillStyle = '#2a0a3d';
+    c.font = '15px "Hiragino Sans","Meiryo",sans-serif';
+    lines.forEach((line, i) => c.fillText(line, rightX + 16, ry + 52 + i * 23));
+
+    ry += boxH + 18;
+  }
+
+  c.font = '12px "Hiragino Sans","Meiryo",sans-serif';
+  const warnLines = wrapCJKText(c, '⚠ ' + result.warn, rightW - 28);
+  const warnH = 18 + warnLines.length * 19 + 12;
+  c.fillStyle = '#fff6df';
+  roundRectPath(c, rightX, ry, rightW, warnH, 10);
+  c.fill();
+  c.strokeStyle = '#d9b98f'; c.lineWidth = 1.5; c.setLineDash([4, 3]);
+  roundRectPath(c, rightX, ry, rightW, warnH, 10);
+  c.stroke();
+  c.setLineDash([]);
+  c.fillStyle = '#a3762b';
+  warnLines.forEach((line, i) => c.fillText(line, rightX + 14, ry + 24 + i * 19));
+  ry += warnH;
+
+  // フッター（両カラムの下・全幅中央）
+  const contentBottom = Math.max(leftBottom, ry) + 40;
+  c.textAlign = 'center';
+  c.font = '13px sans-serif';
+  c.fillStyle = '#c8b8ff';
+  c.fillText(location.href.replace(/^https?:\/\//, ''), CARD_W / 2, contentBottom);
+  c.font = '11px sans-serif';
+  c.fillStyle = '#8b7bb8';
+  c.fillText('©MigiteniEdamame ©Pisorium', CARD_W / 2, contentBottom + 24);
+
+  const finalH = contentBottom + 46;
+  const finalCanvas = document.createElement('canvas');
+  finalCanvas.width = CARD_W;
+  finalCanvas.height = Math.ceil(finalH);
+  finalCanvas.getContext('2d').drawImage(off, 0, 0, CARD_W, finalH, 0, 0, CARD_W, finalH);
+  return new Promise(resolve => finalCanvas.toBlob(resolve, 'image/png'));
+}
+
+async function shareResult(result){
+  const shareBtn = document.getElementById('shareBtn');
+  const originalLabel = shareBtn.textContent;
+  shareBtn.textContent = '画像生成中…';
+  shareBtn.disabled = true;
+
+  try{
+    const blob = await buildShareImageBlob(result);
+    const shareText = `「${result.title}」\n手相偏差値：${result.score}\n${location.href}`;
+    const file = new File([blob], 'tesou-result.png', {type: 'image/png'});
+
+    if(navigator.canShare && navigator.canShare({files: [file]})){
+      await navigator.share({files: [file], title: '手相を描くクソゲー', text: shareText});
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'tesou-result.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(shareText);
+        alert('画像を保存しました！シェア用のテキストはクリップボードにコピー済みなので、SNSに貼り付けてください。');
+      } else {
+        alert('画像を保存しました！\n\n以下のテキストをコピーしてSNSに貼り付けてください：\n\n' + shareText);
+      }
+    }
+  }catch(err){
+    if(err.name !== 'AbortError'){
+      console.error(err);
+      alert('シェアに失敗しました…\n' + err.message);
+    }
+  }finally{
+    shareBtn.textContent = originalLabel;
+    shareBtn.disabled = false;
+  }
+}
+
+let lastResult = null;
+
+const judgeBtn = document.getElementById('judgeBtn');
+judgeBtn.addEventListener('click', async () => {
+  if(!hasDrawing()){
+    alert('まずは手相を描いてください！（何も描かずに運命は決まりません）');
+    return;
+  }
+  if(!getApiKey()){
+    alert('Gemini APIキーが設定されていません。上の「Gemini APIキー設定」欄にキーを貼り付けて保存してください。');
+    return;
+  }
+
+  const originalLabel = judgeBtn.textContent;
+  judgeBtn.textContent = '占い中…🔮';
+  judgeBtn.disabled = true;
+  showLoading();
+
+  try{
+    const imageBase64 = await buildPalmImageBase64();
+    const result = await askGeminiFortune(imageBase64);
+    lastResult = result;
+
+    document.getElementById('rankText').textContent = result.title;
+    document.getElementById('scoreText').textContent = result.score;
+    document.getElementById('line1').textContent = result.line1;
+    document.getElementById('line2').textContent = result.line2;
+    document.getElementById('line3').textContent = result.line3;
+    document.getElementById('line4').textContent = result.line4;
+    document.getElementById('warnLine').textContent = result.warn;
+
+    const panel = document.getElementById('resultPanel');
+    panel.classList.remove('show');
+    void panel.offsetWidth;
+    panel.classList.add('show');
+    panel.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+    spawnConfetti();
+  }catch(err){
+    console.error(err);
+    alert('Gemini占いに失敗しました…\n' + err.message);
+  }finally{
+    hideLoading();
+    judgeBtn.textContent = originalLabel;
+    judgeBtn.disabled = false;
+  }
+});
+
+document.getElementById('retryBtn').addEventListener('click', () => {
+  judgeBtn.click();
+});
+
+document.getElementById('shareBtn').addEventListener('click', () => {
+  if(!lastResult) return;
+  shareResult(lastResult);
+});
+
+function spawnConfetti(count = 24){
+  const emojis = ['✨','🌟','💫','🔮','🌈','⭐'];
+  for(let i=0;i<count;i++){
+    const el = document.createElement('div');
+    el.className='emoji-fall';
+    el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    el.style.left = Math.random()*100+'vw';
+    el.style.animationDuration = (2+Math.random()*2)+'s';
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 4200);
+  }
+}
+
+// 初期化
+resizeCanvas();
+</script>
+</body>
+</html>
